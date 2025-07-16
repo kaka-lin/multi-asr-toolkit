@@ -1,6 +1,6 @@
 import numpy as np
 
-from backends import get_backend
+from backends import get_asr_backend
 from utils.subtitle_generator import save_transcription_results
 
 
@@ -59,7 +59,7 @@ def transcribe_audio(audio_input, backend, language, model_size, word_timestamps
     kwargs = {"language": language}
     if model_name:
         kwargs["model_size"] = model_name
-    asr = get_backend(backend, **kwargs)
+    asr = get_asr_backend(backend, **kwargs)
     result = asr.transcribe(audio, word_timestamps=word_timestamps)
 
     # Convert the result to ASRResult format

@@ -1,12 +1,12 @@
 import platform
 
-from .transformers_backend import TransformersBackend
-from .speech_recognition_backend import SpeechRecognitionBackend
-from .whisper_backend import WhisperBackend
-from .faster_whisper_backend import FasterWhisperBackend
+from .asr.transformers_backend import TransformersBackend
+from .asr.speech_recognition_backend import SpeechRecognitionBackend
+from .asr.whisper_backend import WhisperBackend
+from .asr.faster_whisper_backend import FasterWhisperBackend
 
 
-def get_backend(name: str, **kwargs):
+def get_asr_backend(name: str, **kwargs):
     name = name.lower()
     if name == "transformers":
         return TransformersBackend(**kwargs)
@@ -17,7 +17,7 @@ def get_backend(name: str, **kwargs):
     elif name == "faster-whisper":
         return FasterWhisperBackend(**kwargs)
     elif name == "mlx-whisper" and platform.system() == "Darwin":
-        from .mlx_whisper_backend import MLXWhisperBackend
+        from .asr.mlx_whisper_backend import MLXWhisperBackend
         return MLXWhisperBackend(**kwargs)
     else:
         raise ValueError(f"Unknown backend: {name}")
