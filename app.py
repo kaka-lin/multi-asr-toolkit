@@ -1,3 +1,4 @@
+import sys
 import argparse
 import platform
 
@@ -5,6 +6,7 @@ import gradio as gr
 
 from cli import run_cli
 from utils.model import transcribe_audio
+from utils.preprocess import get_media_path
 
 backend_choices = ["transformers", "faster-whisper", "whisper", "speech-recognition"]
 language_choices = ["zh", "en", "ja", "ko", "auto"]
@@ -29,6 +31,13 @@ def update_model_size_dropdown(backend):
     )
 
 
+def transcribe_and_update_video(audio_path, backend, language, model_size, word_timestamps, video_path):
+    text, srt_path = transcribe_audio(audio_path, backend, language, model_size, word_timestamps)
+    if video_path and srt_path:
+        return text, (video_path, srt_path)
+    return text, video_path
+
+
 def build_demo():
     # Create a Gradio interface
     with gr.Blocks() as app:
@@ -36,32 +45,57 @@ def build_demo():
         gr.Markdown("## 🧠 Multi-ASR Toolkit - 語音轉文字平台")
 
         with gr.Row():
-            backend_dropdown = gr.Dropdown(choices=backend_choices, label="選擇引擎", value=backend_choices[0])
-            language_dropdown = gr.Dropdown(choices=language_choices, label="語言", value=language_choices[0])
-            modelsize_dropdown = gr.Dropdown(
-                choices=model_size_options["transformers"],
-                label="模型大小",
-                value="small"
-            )
+            with gr.Column(scale=3):
+                file_input = gr.Audio(sources=["upload"], type="filepath", label="📂 上傳檔案")
+                mic_input = gr.Audio(sources=["microphone"], type="filepath", label="🎙️ 麥克風錄音")
+                youtube_url = gr.Textbox(label="YouTube URL")
+                yt_quality = gr.Radio(
+                    choices=["low", "good", "best"],
+                    value="best",
+                    label="YouTube Video Quality",
+                    interactive=True
+                )
+                audio_format = gr.Radio(
+                    choices=["wav", "flac", "mp3"],
+                    value="mp3", label="Audio Format",
+                    interactive=True
+                )
+                submit_btn = gr.Button("上傳")
+            
+            with gr.Column(scale=4):
+                video_preview = gr.Video(label="Video", interactive=False)
+                audio_preview = gr.Audio(label="Audio", interactive=False, type="filepath")
+                output_text = gr.Textbox(label="📝 辨識結果")
+                error_box = gr.Textbox(label="錯誤訊息", visible=False)
 
-        with gr.Row():
-            mic_input = gr.Audio(sources=["microphone"], type="filepath", label="🎙️ 麥克風錄音")
-            file_input = gr.Audio(sources=["upload"], type="filepath", label="📂 上傳檔案")
-
-        output_text = gr.Textbox(label="📝 辨識結果")
+            with gr.Row(scale=3):
+                backend_dropdown = gr.Dropdown(choices=backend_choices, label="選擇引擎", value=backend_choices[0])
+                language_dropdown = gr.Dropdown(choices=language_choices, label="語言", value=language_choices[0])
+                modelsize_dropdown = gr.Dropdown(
+                    choices=model_size_options["transformers"],
+                    label="模型大小",
+                    value="small"
+                )
+                word_timestamps_check = gr.Checkbox(label="Word Timestamps - Highlight Words", value=True, interactive=True)
+                transcribe_btn = gr.Button("轉錄")
         
         # Action parts
-        submit_btn = gr.Button("轉換")
         submit_btn.click(
-            fn=transcribe_audio,
-            inputs=[mic_input, file_input, backend_dropdown, language_dropdown, modelsize_dropdown],
-            outputs=output_text
+            fn=get_media_path,
+            inputs=[file_input, mic_input, youtube_url, yt_quality, audio_format],
+            outputs=[video_preview, audio_preview, error_box],
         )
 
         backend_dropdown.change(
             fn=update_model_size_dropdown,
             inputs=backend_dropdown,
             outputs=modelsize_dropdown
+        )
+
+        transcribe_btn.click(
+            fn=transcribe_and_update_video,
+            inputs=[audio_preview, backend_dropdown, language_dropdown, modelsize_dropdown, word_timestamps_check, video_preview],
+            outputs=[output_text, video_preview]
         )
 
     return app

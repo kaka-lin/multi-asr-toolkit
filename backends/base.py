@@ -1,4 +1,7 @@
+from typing import Any
 from abc import ABC, abstractmethod
+
+from utils.dataclasses import ASRResult
 
 
 class ASRBackend(ABC):
@@ -7,5 +10,9 @@ class ASRBackend(ABC):
         self.model_size = model_size
 
     @abstractmethod
-    def transcribe(self, audio_path: str) -> str:
-        pass
+    def transcribe(self, audio_path: str, word_timestamps: bool = True) -> Any:
+        raise NotImplementedError("must be implemented in the child class")
+
+    @abstractmethod
+    def to_asr_result(self, result: Any) -> ASRResult:
+        raise NotImplementedError("must be implemented in the child class")

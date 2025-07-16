@@ -1,5 +1,9 @@
+from typing import Any
+
 import whisper
+
 from .base import ASRBackend
+from utils.dataclasses import ASRResult, ASRSegment, ASRToken
 
 
 class WhisperBackend(ASRBackend):
@@ -7,24 +11,44 @@ class WhisperBackend(ASRBackend):
         super().__init__(language, model_size)
         self.model = whisper.load_model(model_size)
 
-    def transcribe(self, audio_path: str) -> str:
-        # load audio and pad/trim it to fit 30 seconds
-        audio = whisper.load_audio(audio_path)
-        audio = whisper.pad_or_trim(audio)
+    def transcribe(self, audio_path: str, word_timestamps: bool = True) -> Any:
+        """
+        Calls the original whisper model and returns the raw dictionary result.
+        """
+        result = self.model.transcribe(
+            audio_path,
+            language=self.language,
+            word_timestamps=word_timestamps
+        )
+        return result
 
-        # make log-Mel spectrogram and move to the same device as the model
-        mel = whisper.log_mel_spectrogram(
-            audio,
-            n_mels=self.model.dims.n_mels
-        ).to(self.model.device)
+    def to_asr_result(self, result: Any) -> ASRResult:
+        """
+        Converts the raw dictionary result from whisper
+        into our standard ASRResult object.
+        """
+        segments = []
+        for seg_data in result.get("segments", []):
+            words_data = seg_data.get("words", [])
+            tokens = [
+                ASRToken(
+                    start=word.get("start"),
+                    end=word.get("end"),
+                    token=word.get("word"),
+                    probability=word.get("probability")
+                ) for word in words_data if word.get("start") is not None
+            ]
 
-        # detect the spoken language
-        # _, probs = self.model.detect_language(mel)
-        # print(f"Detected language: {max(probs, key=probs.get)}")
+            segment = ASRSegment(
+                start=seg_data.get("start"),
+                end=seg_data.get("end"),
+                text=seg_data.get("text", ""),
+                tokens=tokens
+            )
+            segments.append(segment)
 
-        # decode the audio
-        options = whisper.DecodingOptions(language=self.language)
-        result = whisper.decode(self.model, mel, options)
-        subtitle_text = result.text.strip()
-
-        return subtitle_text
+        return ASRResult(
+            text=result.get("text", "").strip(),
+            segments=segments,
+            language=result.get("language")
+        )
