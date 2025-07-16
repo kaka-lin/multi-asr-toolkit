@@ -8,6 +8,7 @@ __pycache__
 
 # audio
 audio/
+downloads/
 *.wav
 *.mp3
 !test.mp3
