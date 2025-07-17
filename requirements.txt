@@ -3,10 +3,17 @@ pygame==2.6.1
 pydub==0.25.1
 torch>=2.1
 tensorflow>=2.6
+
+# for download Youtube videos
+yt-dlp==2025.5.22
+
+# for ASR
 transformers==4.51.3
 SpeechRecognition==3.14.3
 openai-whisper
 faster-whisper
-
 # 只有在 macOS 上才安裝 mlx-whisper
 mlx-whisper; sys_platform == "darwin"
+
+# for demucs
+demucs==4.0.1
