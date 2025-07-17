@@ -17,6 +17,8 @@ Multi-ASR Toolkit is a flexible and extensible speech recognition toolkit suppor
 - [Whisper](https://github.com/openai/whisper)
 - [Faster Whisper](https://github.com/SYSTRAN/faster-whisper)
 - [MLX Whisper](https://github.com/ml-explore/mlx-examples/tree/main/whisper)
+- [demucs](https://github.com/adefossez/demucs/tree/main)
+- [yt-dlp](https://github.com/yt-dlp/yt-dlp)
 
 ## Install
 
@@ -56,4 +58,35 @@ $ python app.py --mode cli data/test.mp3 --backend faster-whisper --language en 
 $ python3 app.py
 ```
 
-![](images/result.png)
+## ❓Tips & Tricks
+
+### YT=DLP Authentication Error
+
+- Open a new incognito/private window and log in to your YouTube account.
+- In the same tab, open https://www.youtube.com/robots.txt, ensuring that only this tab is using the login session.
+- Use a browser extension (e.g., "cookies.txt" for Chrome) to export the youtube.com cookies for this session to a file named cookies.txt, and then immediately close the incognito window.
+- Using the manually exported cookies.txt in Python.
+    
+    Place your cookies.txt in a fixed path, and then specify it in ydl_opts like this:
+
+    ```python
+    ydl_opts = {
+    'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/mp4',
+    'outtmpl': filepath,
+    'verbose': True,          # 用于调试，正式可去掉
+    'merge_output_format': 'mp4',
+    'cookies': '<Path>/youtube_cookies.txt',
+    }
+    ```
+#### reference: [yt-dlp/wiki/Extractors](https://github.com/yt-dlp/yt-dlp/wiki/Extractors)
+
+### Demucs part and usage
+
+- I just copied the demucs folder from the [demucs](https://github.com/adefossez/demucs/tree/main) repo into the backends folder.
+
+- [Demucs APIs docs](https://github.com/adefossez/demucs/blob/main/docs/api.md)
+
+
+## 🙏 Reference
+
+- [abus-aikorea/kara-audio](https://github.com/abus-aikorea/kara-audio)
