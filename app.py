@@ -23,7 +23,9 @@ if platform.system() == "Darwin":
     # macOS specific settings
     asr_backend_choices.append("mlx-whisper")
     model_size_options["mlx-whisper"] = [
-        "tiny", "base", "small", "medium", "large-v1", "large-v2", "large-v3", "large-v3-turbo"
+        "tiny", "tiny.en", "base", "base.en", "small", "small.en",
+        "medium", "medium.en", "large-v1", "large-v2", "large-v3", 
+        "large-v3-turbo", "large"
     ]
 
 refresh_symbol = '🔄'
@@ -48,11 +50,15 @@ def run_demixing(audio_path, model_name):
     return (file_paths, vocal_audio_path, gr.Textbox("", visible=False))
 
 
-def update_model_size_dropdown(backend):
-    return gr.Dropdown(
+def update_backend_options(backend):
+    model_update = gr.update(
         choices=model_size_options[backend],
         value=model_size_options[backend][0],
     )
+    language_update = gr.update(
+        visible=(backend != "mlx-whisper")
+    )
+    return model_update, language_update
 
 
 def transcribe_and_update_video(
@@ -128,7 +134,7 @@ def build_demo():
                     demix_btn = gr.Button("Demixing")
         
                 # ASR section
-                backend_dropdown = gr.Dropdown(
+                asr_backend_dropdown = gr.Dropdown(
                     choices=asr_backend_choices, label="選擇引擎", value=asr_backend_choices[0]
                 )
                 language_dropdown = gr.Dropdown(
@@ -163,16 +169,16 @@ def build_demo():
             ],
         )
 
-        backend_dropdown.change(
-            fn=update_model_size_dropdown,
-            inputs=backend_dropdown,
-            outputs=modelsize_dropdown
+        asr_backend_dropdown.change(
+            fn=update_backend_options,
+            inputs=asr_backend_dropdown,
+            outputs=[modelsize_dropdown, language_dropdown]
         )
 
         transcribe_btn.click(
             fn=transcribe_and_update_video,
             inputs=[
-                audio_preview, backend_dropdown, language_dropdown, 
+                audio_preview, asr_backend_dropdown, language_dropdown, 
                 modelsize_dropdown, word_timestamps_check, video_preview,
             ],
             outputs=[output_text, subtitle_results, video_preview]
