@@ -20,7 +20,7 @@ def extract_audio(video_path, audio_format="mp3"):
         audio_path = os.path.splitext(video_path)[0] + f".{audio_format}"
         if os.path.exists(audio_path):
             return audio_path
-            
+    
         codec = "copy" if audio_format == "m4a" else "libmp3lame"
         command = [
             "ffmpeg", "-i", video_path, "-vn", "-acodec", codec, "-y", audio_path,
@@ -81,7 +81,7 @@ def download_youtube_video(
     # File output path
     video_id = match.group(1)
     os.makedirs(output_dir, exist_ok=True)
-    
+
     base_filename = filename if filename != "" else video_id
     video_filepath = os.path.join(output_dir, f"{base_filename}.mp4")
     audio_filepath = os.path.join(
@@ -115,7 +115,7 @@ def download_youtube_video(
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.download([url])
-        
+
         if not os.path.exists(video_filepath):
             return None, None, "影片下載失敗，找不到檔案。"
 
@@ -123,7 +123,6 @@ def download_youtube_video(
         if not extracted_audio_path:
             return video_filepath, None, "音訊提取失敗。"
 
-        print(">>>", video_filepath, extracted_audio_path)
         return video_filepath, extracted_audio_path, None
 
     except Exception as e:
@@ -151,7 +150,7 @@ def get_media_path(
     """
     if file_input:
         return None, file_input, ""
-  
+
     if mic_input:
         return None, mic_input, ""
 
@@ -164,7 +163,7 @@ def get_media_path(
         # Return paths even if there's a partial error
         if err:
             return video_path, audio_path, err
-        
+
         return video_path, audio_path, ""
 
     return None, None, "請錄音、上傳檔案或提供 YouTube 連結"

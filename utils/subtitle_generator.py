@@ -45,7 +45,7 @@ def save_as_vtt(result: ASRResult, audio_path: str):
     """Saves the transcription result in VTT format."""
     if not result.segments:
         print("Warning: No segments found, cannot generate VTT file.")
-        return
+        return None
 
     output_path = os.path.splitext(audio_path)[0] + ".vtt"
     with open(output_path, "w", encoding="utf-8") as vtt_file:
@@ -58,6 +58,8 @@ def save_as_vtt(result: ASRResult, audio_path: str):
                 text = f"[{segment.speaker}] {text}"
             vtt_file.write(f"{start_time} --> {end_time}\n")
             vtt_file.write(f"{text}\n\n")
+    
+    return output_path
 
 
 def save_as_txt(result: ASRResult, audio_path: str):
@@ -65,6 +67,7 @@ def save_as_txt(result: ASRResult, audio_path: str):
     output_path = os.path.splitext(audio_path)[0] + ".txt"
     with open(output_path, "w", encoding="utf-8") as txt_file:
         txt_file.write(result.text.strip())
+    return output_path
 
 
 def save_as_json(result: ASRResult, audio_path: str):
@@ -95,13 +98,15 @@ def save_as_json(result: ASRResult, audio_path: str):
     }
     with open(output_path, "w", encoding="utf-8") as json_file:
         json.dump(result_dict, json_file, indent=4, ensure_ascii=False)
+    
+    return output_path
 
 
 def save_transcription_results(result: ASRResult, audio_path: str):
     """Saves the transcription result in all supported formats."""
     srt_path = save_as_srt(result, audio_path)
-    save_as_vtt(result, audio_path)
-    save_as_txt(result, audio_path)
-    save_as_json(result, audio_path)
+    vtt_path = save_as_vtt(result, audio_path)
+    txtx_path = save_as_txt(result, audio_path)
+    json_path = save_as_json(result, audio_path)
 
-    return srt_path
+    return [srt_path, vtt_path, txtx_path, json_path]
