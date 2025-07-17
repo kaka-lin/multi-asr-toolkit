@@ -12,13 +12,12 @@ class MLXWhisperBackend(ASRBackend):
 
     def transcribe(self, audio_path: str, word_timestamps: bool = True) -> Any:
         """
-        Calls the mlx_whisper transcribe function and returns the raw dictionary.
+        Calls mlx_whisper.transcribe and returns the raw dictionary.
         """
-        # mlx-whisper doesn't have a word_timestamps parameter, it's on by default
         result = mlx_whisper.transcribe(
             audio_path,
-            language=self.language,
             path_or_hf_repo=self.model_size,
+            word_timestamps=word_timestamps,
         )
         return result
 
@@ -29,7 +28,7 @@ class MLXWhisperBackend(ASRBackend):
         """
         segments = []
         for seg_data in result.get("segments", []):
-            # mlx-whisper might not have a 'words' key, so we handle its absence
+            # Handle absence of 'words' key, as it might not be present.
             words_data = seg_data.get("words", [])
             tokens = [
                 ASRToken(
