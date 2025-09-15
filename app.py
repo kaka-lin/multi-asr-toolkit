@@ -7,6 +7,7 @@ import gradio as gr
 from cli import run_cli
 from utils.model import transcribe_audio, demix_audio
 from utils.preprocess import get_media_path
+from tabs.asr_tab import create_asr_tab
 
 demix_choices = ["UVR-MDX-NET Inst HQ4", "UVR-MDX-NET-Voc_FT", "htdemucs"]
 asr_backend_choices = ["transformers", "faster-whisper", "whisper", "speech-recognition"]
@@ -78,111 +79,14 @@ def transcribe_and_update_video(
 def build_demo():
     # Create a Gradio interface
     with gr.Blocks() as app:
-        # UI parts
+        # UI Parts
         gr.Markdown("## 🧠 Multi-ASR Toolkit - 語音轉文字平台")
-
-        with gr.Row():
-            with gr.Column(scale=3):
-                file_input = gr.Audio(
-                    sources=["upload"], type="filepath", label="📂 上傳檔案"
-                )
-                mic_input = gr.Audio(
-                    sources=["microphone"], type="filepath", label="🎙️ 麥克風錄音"
-                )
-                youtube_url = gr.Textbox(label="YouTube URL")
-                yt_quality = gr.Radio(
-                    choices=["low", "good", "best"],
-                    value="best",
-                    label="YouTube Video Quality",
-                    interactive=True
-                )
-                audio_format = gr.Radio(
-                    choices=["wav", "flac", "mp3"],
-                    value="mp3",
-                    label="Audio Format",
-                    interactive=True
-                )
-                submit_btn = gr.Button("上傳")
-            
-            with gr.Column(scale=4):
-                video_preview = gr.Video(label="Video", interactive=False)
-                audio_preview = gr.Audio(
-                    label="Audio", interactive=False, type="filepath"
-                )
-                output_text = gr.Textbox(label="📝 辨識結果")
-                error_box = gr.Textbox(label="錯誤訊息", visible=False)
-
-            with gr.Column(scale=3):
-                # Demixing section
-                demix_mode_dropdown = gr.Dropdown(
-                    choices=demix_choices,
-                    value=demix_choices[2],
-                    label="MDX Models",
-                    interactive=True
-                )
-                demix_audio_format = gr.Radio(
-                    choices=["wav", "flac", "mp3"],
-                    value="mp3",
-                    label="Audio Format",
-                    interactive=True
-                )
-                demix_results = gr.File(label="Demixing", interactive=False, file_count="multiple")
-                with gr.Row():
-                    refresh_btn = gr.Button(
-                        f"Refresh Model {refresh_symbol}", interactive=True
-                    )
-                    demix_btn = gr.Button("Demixing")
-        
-                # ASR section
-                asr_backend_dropdown = gr.Dropdown(
-                    choices=asr_backend_choices, label="選擇引擎", value=asr_backend_choices[0]
-                )
-                language_dropdown = gr.Dropdown(
-                    choices=language_choices, label="語言", value=language_choices[0]
-                )
-                modelsize_dropdown = gr.Dropdown(
-                    choices=model_size_options["transformers"],
-                    label="模型大小",
-                    value="small"
-                )
-                word_timestamps_check = gr.Checkbox(
-                    label="Word Timestamps - Highlight Words", value=True, interactive=True
-                )
-                subtitle_results = gr.File(label="Subtitles", interactive=False, file_count="multiple")
-                transcribe_btn = gr.Button("轉錄")
-                
-        
-        # Action parts
-        submit_btn.click(
-            fn=get_media_path,
-            inputs=[file_input, mic_input, youtube_url, yt_quality, audio_format],
-            outputs=[video_preview, audio_preview, error_box],
-        )
-
-        demix_btn.click(
-            fn=run_demixing,
-            inputs=[audio_preview, demix_mode_dropdown],
-            outputs=[
-                demix_results,
-                audio_preview,
-                error_box,
-            ],
-        )
-
-        asr_backend_dropdown.change(
-            fn=update_backend_options,
-            inputs=asr_backend_dropdown,
-            outputs=[modelsize_dropdown, language_dropdown]
-        )
-
-        transcribe_btn.click(
-            fn=transcribe_and_update_video,
-            inputs=[
-                audio_preview, asr_backend_dropdown, language_dropdown, 
-                modelsize_dropdown, word_timestamps_check, video_preview,
-            ],
-            outputs=[output_text, subtitle_results, video_preview]
-        )
+        with gr.Tabs():
+            create_asr_tab(
+                demix_choices, asr_backend_choices, language_choices, model_size_options,
+                refresh_symbol, get_media_path, run_demixing, update_backend_options,
+                transcribe_and_update_video
+            )
 
     return app
 

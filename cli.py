@@ -16,8 +16,7 @@ def run_cli(args):
     # transcribe audio
     print(f"[INFO] 使用 {args.backend} 後端進行辨識...")
     result = transcribe_audio(
-        mic=None,
-        file=args.audio_path,
+        audio_input=args.audio_path,
         backend=args.backend,
         language=args.language,
         model_size=args.model_size
