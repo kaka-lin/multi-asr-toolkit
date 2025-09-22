@@ -1,10 +1,95 @@
+from dataclasses import dataclass
+from pathlib import Path
+
 import gradio as gr
+
+from core.demucs import demix_audio
+from core.transcription import transcribe_audio
+from utils.preprocess import get_media_path
+
+refresh_symbol = '🔄'
+
+
+@dataclass
+class TranscriptionOptions:
+    """Options for transcription."""
+    backend: str
+    language: str
+    model_size: str
+    word_timestamps: bool
+
+
+def run_demixing(audio_path, model_name):
+    if not audio_path:
+        return (None, None, gr.Textbox("錯誤：音訊檔案路徑為空", visible=True))
+
+    audio_path = Path(audio_path)
+    output_dir = Path("demix_output")
+
+    separated_files, vocal_audio_path = demix_audio(
+        audio_path, model_name, output_dir
+    )
+
+    # Convert Path objects to strings for Gradio
+    file_paths = [str(p) for p in separated_files]
+
+    # If no vocal track is found, return an error message
+    if vocal_audio_path is None:
+        return (
+            file_paths,
+            str(audio_path),
+            gr.Textbox("警告：未找到人聲音軌，請檢查音訊檔案。", visible=True)
+        )
+
+    return (file_paths, vocal_audio_path, gr.Textbox("", visible=False))
+
+
+def transcribe_and_update_video(
+    audio_path: str,
+    options: TranscriptionOptions,
+    video_path: str
+):
+    """
+    Transcribes the audio and updates the video with subtitles.
+
+    Args:
+        audio_path (str): The path to the audio file.
+        options (TranscriptionOptions): The transcription options.
+        video_path (str): The path to the video file.
+
+    Returns:
+        tuple: A tuple containing the transcribed text, subtitle results,
+               and the video path with subtitles.
+    """
+    text, subtitle_results = transcribe_audio(
+        audio_path,
+        options.backend,
+        options.language,
+        options.model_size,
+        options.word_timestamps
+    )
+    srt_path = subtitle_results[0]
+    if video_path and srt_path:
+        return text, subtitle_results, (video_path, srt_path)
+    return text, subtitle_results, video_path
+
+
+def create_transcription_options_and_transcribe(
+    audio_path, backend, language, model_size, word_timestamps, video_path
+):
+    """Helper function to create TranscriptionOptions and call transcribe."""
+    options = TranscriptionOptions(
+        backend=backend,
+        language=language,
+        model_size=model_size,
+        word_timestamps=word_timestamps,
+    )
+    return transcribe_and_update_video(audio_path, options, video_path)
 
 
 def create_asr_tab(
-    demix_choices, asr_backend_choices, language_choices, model_size_options,
-    refresh_symbol, get_media_path, run_demixing, update_backend_options,
-    transcribe_and_update_video
+    demix_choices, asr_backend_choices, language_choices,
+    model_size_options, update_backend_options,
 ):
     """
     Creates the ASR (Automatic Speech Recognition) tab for the Gradio
@@ -12,24 +97,7 @@ def create_asr_tab(
 
     This tab includes components for uploading audio/video files, recording
     from a microphone, providing a YouTube URL, demixing audio, and
-    performing speech-to-text transcription.
-
-    Args:
-        demix_choices (list): A list of available demixing models.
-        asr_backend_choices (list): A list of available ASR backend engines.
-        language_choices (list): A list of supported languages for
-                                 transcription.
-        model_size_options (dict): A dictionary of available model sizes for
-                                   different backends.
-        refresh_symbol (str): The symbol/emoji for the refresh button.
-        get_media_path (callable): Callback to process input media.
-        run_demixing (callable): Callback to run the audio demixing process.
-        update_backend_options (callable): Callback to update model and
-                                           language options based on the
-                                           selected ASR backend.
-        transcribe_and_update_video (callable): Callback to run transcription
-                                                and update the video with
-                                                subtitles.
+    performing speech-to-text transcription.å
     """
     # Group arguments for clarity
     options = {
@@ -40,10 +108,7 @@ def create_asr_tab(
         "refresh_symbol": refresh_symbol,
     }
     callbacks = {
-        "get_media_path": get_media_path,
-        "run_demixing": run_demixing,
         "update_backend_options": update_backend_options,
-        "transcribe_and_update_video": transcribe_and_update_video,
     }
 
     # Dictionary to hold all Gradio components
@@ -122,7 +187,7 @@ def create_asr_tab(
 
     # Action parts
     c["submit_btn"].click(  # pylint: disable=no-member
-        fn=callbacks["get_media_path"],
+        fn=get_media_path,
         inputs=[
             c["file_input"], c["mic_input"], c["youtube_url"],
             c["yt_quality"], c["audio_format"]
@@ -131,7 +196,7 @@ def create_asr_tab(
     )
 
     c["demix_btn"].click(  # pylint: disable=no-member
-        fn=callbacks["run_demixing"],
+        fn=run_demixing,
         inputs=[c["audio_preview"], c["demix_mode_dropdown"]],
         outputs=[
             c["demix_results"], c["audio_preview"], c["error_box"],
@@ -145,7 +210,7 @@ def create_asr_tab(
     )
 
     c["transcribe_btn"].click(  # pylint: disable=no-member
-        fn=callbacks["transcribe_and_update_video"],
+        fn=create_transcription_options_and_transcribe,
         inputs=[
             c["audio_preview"], c["asr_backend_dropdown"],
             c["language_dropdown"], c["modelsize_dropdown"],

@@ -7,15 +7,16 @@ from utils.dataclasses import ASRResult, ASRSegment
 
 
 class TransformersBackend(ASRBackend):
-    def __init__(self,
-                 model_name="openai/whisper-small",
-                 device=-1,
-                 language="auto",
-                 model_size=None):
+    def __init__(
+        self,
+        model_size="openai/whisper-small",
+        device=-1,
+        language="auto"
+    ):
         super().__init__(language)
         self.asr = pipeline(
             task="automatic-speech-recognition",
-            model=model_name,
+            model=model_size,
             device=device,   # -1 for CPU, 0 for GPU
             framework="pt",  # "tf" for TensorFlow, "pt" for PyTorch
         )

@@ -1,5 +1,5 @@
 import argparse
-from utils.model import transcribe_audio
+from core.transcription import transcribe_audio
 
 
 def run_cli(args):
@@ -15,11 +15,11 @@ def run_cli(args):
 
     # transcribe audio
     print(f"[INFO] 使用 {args.backend} 後端進行辨識...")
-    result = transcribe_audio(
+    text, _ = transcribe_audio(
         audio_input=args.audio_path,
         backend=args.backend,
         language=args.language,
         model_size=args.model_size
     )
     print("\n📝 辨識結果：\n")
-    print(result)
+    print(text)

@@ -8,11 +8,13 @@ from utils.dataclasses import ASRToken, ASRSegment, ASRResult
 
 
 class FasterWhisperBackend(ASRBackend):
-    def __init__(self,
-                 model_size="base",
-                 device="cpu",
-                 compute_type="float32",
-                 language="auto"):
+    def __init__(
+        self,
+        model_size="base",
+        device="cpu",
+        compute_type="float32",
+        language="auto"
+    ):
         super().__init__(language, model_size)
 
         self.device = "cuda" if torch.cuda.is_available() else "cpu"

@@ -1,6 +1,8 @@
 import os
 import re
 import subprocess
+from pathlib import Path
+from typing import Iterable
 
 import yt_dlp
 
@@ -41,6 +43,45 @@ def extract_audio(video_path, audio_format="mp3"):
         except Exception as e:
             print(f"提取音訊失敗: {e}")
             return None
+
+
+def extract_audio_chunks_from_video(
+    video_path: str,
+    chunk_sec: float = 1.2,
+) -> Iterable[bytes]:
+    """以串流方式，從影片解出 s16le/16k/mono PCM，並以 chunk_sec 為單位 yield。"""
+    assert Path(video_path).is_file(), f"File not found: {video_path}"
+    
+    SR = 16000
+    bytes_per_sec = SR * 2  # s16le, 1ch
+    frame_bytes = int(bytes_per_sec * chunk_sec)
+
+    command = [
+        "ffmpeg",
+        "-hide_banner", "-nostdin", "-loglevel", "warning",
+        "-i", video_path,
+        "-vn",
+        "-ac", "1", "-ar", str(SR),
+        "-acodec", "pcm_s16le",
+        "-f", "s16le",
+        "-"
+    ]
+    proc = subprocess.Popen(
+        command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=10**6
+    )
+    
+    try:
+        while True:
+            chunk = proc.stdout.read(frame_bytes)
+            if not chunk:
+                break
+            yield chunk
+    finally:
+        try:
+            proc.terminate()
+            proc.wait(timeout=2)
+        except Exception:
+            proc.kill()
 
 
 def download_youtube_video(
@@ -130,7 +171,7 @@ def download_youtube_video(
 
 
 def get_media_path(
-    file_input, mic_input, youtube_url, yt_quality="best", audio_format="mp3"
+    file_input, mic_input=None, youtube_url=None, yt_quality="best", audio_format="mp3"
 ):
     """
     從檔案、麥克風或 YouTube URL 獲取媒體路徑。
