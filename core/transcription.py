@@ -110,7 +110,7 @@ class StreamingTranscriber:
     def _concat_seg_pcm(self) -> bytes:
         """將當前段落累積的 PCM bytes 串接起來。"""
         return b"".join(self._seg_bytes) if self._seg_bytes else b""
-    
+
     def _write_wav(self, pcm_bytes: bytes) -> str:
         """將 PCM bytes 寫入 WAV 檔案並回傳路徑。"""
         fname = f"{self.filename_prefix}_{self._seg_index:04d}.wav"
@@ -139,7 +139,7 @@ class StreamingTranscriber:
 
         seg_start = self._seg_start_time
         seg_end = self.estimated_end_time
-        
+
         # Reset for the next segment
         self._seg_start_time = seg_end
         self._seg_bytes = []
@@ -165,7 +165,7 @@ class StreamingTranscriber:
             self._ring = b""
 
         return self._finalize_segment(final_text)
-    
+
     def stream_transcribe(
         self, audio_bytes: bytes
     ) -> Tuple[Optional[str], FinalizedSegment]:
@@ -216,7 +216,7 @@ class StreamingTranscriber:
             # 4. 判斷是否需要切分段落
             # 計算目前段落的持續時間
             current_utt_duration = self.estimated_end_time - self._seg_start_time
-            
+
             # 定義分段條件
             too_long = current_utt_duration >= self.max_utt_sec
             stalled = (now - self._last_change_t) * 1000.0 >= self.stall_ms
@@ -226,7 +226,7 @@ class StreamingTranscriber:
             # 如果滿足任一分段條件，則結束目前段落
             if too_long or stalled_trigger or (punct_trigger and current_utt_duration > 1.0):
                 finalized_segment = self._finalize_segment(stripped)
-                
+
                 # 將本次處理後剩餘的音訊存入 ring 緩衝區，供下次使用
                 self._ring = buf[buffer_position + step_size:]
                 return emitted_partial, finalized_segment

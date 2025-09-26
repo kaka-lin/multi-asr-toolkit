@@ -1,5 +1,6 @@
 import os
 import wave
+import contextlib
 
 
 def parse_wav(filename):
@@ -13,6 +14,15 @@ def parse_wav(filename):
         str_data = wav.readframes(frames)
 
     return (channel, rate, resolution, frames), str_data
+
+
+@contextlib.contextmanager
+def wave_file(filename, channels=1, rate=24000, sample_width=2):
+    with wave.open(filename, "wb") as wf:
+        wf.setnchannels(channels)
+        wf.setsampwidth(sample_width)
+        wf.setframerate(rate)
+        yield wf
 
 
 def split_wav(info, data, time=10):
@@ -39,11 +49,7 @@ def split_wav(info, data, time=10):
 
     print("Split the origin file in {} files with {} seconds.".format(split_file_nums, time))
     for i in range(split_file_nums):
-        with wave.open(split_dir + "split{}.wav".format(i), "wb") as wav:
-            wav.setnchannels(channel)
-            wav.setframerate(rate)
-            wav.setsampwidth(resolution)
-
+        with wave_file(split_dir + "split{}.wav".format(i), "wb", channels=channel, rate=rate, sample_width=resolution) as wav:
             if i == split_file_nums:
                 str_data = data[(i-1) * _bytes:]
             else:
